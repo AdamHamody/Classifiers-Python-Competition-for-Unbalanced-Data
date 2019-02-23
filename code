@@ -1,0 +1,61 @@
+import numpy as np
+import pandas as pd
+import pandas as pa
+import matplotlib.pyplot as plt
+import seaborn as sns
+%matplotlib inline
+
+train = pd.read_csv("train.csv")
+test = pd.read_csv("test.csv")
+
+from sklearn.model_selection import cross_validate
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.ensemble import RandomForestClassifier
+
+classifiers = [
+    KNeighborsClassifier(3),
+    DecisionTreeClassifier(),
+    RandomForestClassifier()]
+    
+scoring = ['recall_macro']
+log_cols = ["Classifier", "macro average Recall", "Log Loss"]
+log = pa.DataFrame(columns=log_cols)
+
+for clf in classifiers:
+    recall = cross_validate(clf, train, y, scoring=scoring,
+                              cv=5, return_train_score=False)
+    name = clf.__class__.__name__
+
+    print("=" * 30)
+    print(name)
+    print('****Results****')
+    Recall = np.mean(recall['test_recall_macro'])
+    print("Macro Recall: {:.4%}".format(Recall))
+
+    ll = 1 - Recall
+
+    print("Log Loss: {}".format(ll))
+
+    log_entry = pa.DataFrame([[name, Recall * 100, ll]], columns=log_cols)
+    log = log.append(log_entry)
+
+
+print("=" * 30)
+
+sns.set_color_codes("muted")
+sns.barplot(x='macro average Recall', y='Classifier', data=log, color="b")
+
+plt.xlabel('Macro Average Recall %')
+plt.xticks(np.arange(0, 100, step=10))
+plt.title('recall scores -sensitivity')
+plt.show()
+
+
+sns.set_color_codes("muted")
+sns.barplot(x='Log Loss', y='Classifier', data=log, color="g")
+
+plt.xlabel('Log Loss')
+# plt.xticks(np.arange(0, 10, step=0.5))
+plt.title('Classifiers Log Loss using max-min rule')
+plt.show()
